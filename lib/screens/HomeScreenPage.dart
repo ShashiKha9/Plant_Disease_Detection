@@ -7,16 +7,24 @@ import 'dart:typed_data';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:plant_disease_detection/models/Classifier.dart';
+import 'package:plant_disease_detection/services/Classifier.dart';
 import 'package:plant_disease_detection/screens/PredictionScreenPage.dart';
 import 'package:tflite/tflite.dart';
 
 import '../models/disease_model.dart';
+import '../services/disease_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:hive/hive.dart';
+
+import '../services/hive_database.dart';
 
 
 
 class HomeScreenPage extends StatefulWidget {
   const HomeScreenPage({super.key});
+
+  static const routeName = '/';
+
 
   @override
   State<HomeScreenPage> createState() => _HomeScreenPageState();
@@ -37,109 +45,34 @@ class _HomeScreenPageState extends State<HomeScreenPage> {
   final Classifier classifier = Classifier();
   late Disease _disease;
 
-   @override
-   // void initState() {
-   //   super.initState();
-   //   loadModels().then((value){
-   //     setState(() {
-   //
-   //     });
-   //   });
-   //   // _categorization = Categorization(modelPath: mModelPath,labelPath: mLabelPath,inputSize: inputSize);
-   //   // loadModel();
-   //   // loadSampleImage();
-   // }
 
-   // Future<Categorization> loadModel() async {
-   //   await _categorization._load;
-   // }
-   // Future<void> _classifyImage() async {
-   //   final results = await _categorization.recognizeImage(_imageBytes);
-   //
-   //   if (results.isNotEmpty) {
-   //     _scaffoldKey.currentState!.showSnackBar(
-   //       SnackBar(
-   //         content: Text("Classified as: ${results
-   //             .first['label']} with confidence: ${results
-   //             .first['confidence']}"),
-   //       ),
-   //     );
-   //   }
-   // }
-  // Future<List?> getDisease(ImageSource imageSource) async {
-  //   var image = await ImagePicker().pickImage(source: imageSource);
-  //   _image = File(image!.path);
-  //   await loadModels();
-  //   var result = await detectImage(_image!);
-  //   Tflite.close();
-  //   return result;
-  // }
-  //
-  //  loadModels() async {
-  //    await Tflite.loadModel(model:"assets/plant_disease_model.tflite",labels: "assets/plant_labels.txt",numThreads: 1);
-  //    print("models loading");
-  //  }
-  //
-  //  //
-  // Future<List?>detectImage(File image)async{
-  //   var output= await Tflite.runModelOnImage(numResults:2,path: image.path,
-  //       threshold: 0.2,imageMean: 0.0,imageStd:255.0,asynch: true);
-  //
-  //   setState((){
-  //     _output=output!;
-  //     _loading=false;
-  //
-  //   });
-  //   print("shashi1: ${output}");
-  //
-  //   return output;
-  //
-  // }
+  @override
+  void dispose(){
+    super.dispose();
+  }
+
+  @override
 
 
-
-
-  // getImageFromGallery() async {
-  //      final pickedFile = await  ImagePicker().pickImage(
-  //          source: ImageSource.gallery);
-  //
-  //      setState(() {
-  //        if (pickedFile != null) {
-  //          _image = File(pickedFile.path);
-  //        }
-  //      });
-  //      detectImage(_image!);
-  //    }
-  //
-  //    Future getImageFromCamera() async {
-  //      final pickedFile = await ImagePicker().pickImage(
-  //          source: ImageSource.camera);
-  //
-  //      setState(() {
-  //        if (pickedFile != null) {
-  //          _image = File(pickedFile.path);
-  //        }
-  //      });
-  //      detectImage(_image!);
-  //
-  //    }
      // select between camera and gallery
-     Future showOptions() async {
-       showCupertinoModalPopup(
+     Future showOptions(BuildContext context,DiseaseService diseaseService,HiveService hiveService) async {
+
+
+
+    showCupertinoModalPopup(
          context: context,
          builder: (context) =>
              CupertinoActionSheet(
                actions: [
                  CupertinoActionSheetAction(
                    child: Text('Photo Gallery'),
-                   onPressed: () {
+                   onPressed: () async {
                      // close the options modal
-                     Navigator.of(context).pop();
 
                      // get image from gallery
                      late double _confidence;
 
-                     classifier.getDisease(ImageSource.gallery).then((value){
+                   await   classifier.getDisease(ImageSource.gallery).then((value){
                        _disease=Disease(
                            name: value![0]["label"],
                            imagePath: classifier.imageFile.path);
@@ -153,6 +86,22 @@ class _HomeScreenPageState extends State<HomeScreenPage> {
                      });
                      if(_confidence>0.8){
 
+                       diseaseService.setDiseaseValue(_disease);
+
+                       hiveService.addDisease(_disease);
+
+
+
+
+
+                       Navigator.restorablePushNamed(context,
+                           PredictionScreen.routeName);
+
+                       print("confidence is printing");
+
+
+
+
                      }
                      
                    },
@@ -161,7 +110,7 @@ class _HomeScreenPageState extends State<HomeScreenPage> {
                  CupertinoActionSheetAction(
                    child: Text('Camera'),
                    onPressed: () {
-                     // close the options modal
+                     // close the options modalg
                      Navigator.of(context).pop();
                      // get image from camera
                      late double _confidence;
@@ -179,7 +128,8 @@ class _HomeScreenPageState extends State<HomeScreenPage> {
                      });
                      if(_confidence>0.8){
 
-
+                       Navigator.restorablePushNamed(context,
+                           PredictionScreen.routeName);
                      }
 
                    },
@@ -199,7 +149,7 @@ class _HomeScreenPageState extends State<HomeScreenPage> {
       child: Scaffold(
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         floatingActionButton: FloatingActionButton(onPressed:(){
-          showOptions();
+          showOptions(context,Provider.of<DiseaseService>(context,listen: false),HiveService());
 
         },
         tooltip: 'Increment',
@@ -285,20 +235,12 @@ class _HomeScreenPageState extends State<HomeScreenPage> {
             SizedBox(
               height: 20,
             ),
-            // ElevatedButton(onPressed: (){
-            //   Navigator.of(context).push(
-            //       MaterialPageRoute(builder: (context)=>PredictionScreen(imageFile: _image!,)));
-            // }, child: Text("Second widget")),
+            ElevatedButton(onPressed: (){
+              Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context)=>PredictionScreen()));
+            }, child: Text("Second widget")),
             
            // _output!=null? Text("${_output[0]['label']}"):Container()
-      
-      
-      
-      
-      
-      
-      
-      
           ],
         ),
       )
