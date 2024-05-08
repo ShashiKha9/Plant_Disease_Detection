@@ -11,10 +11,14 @@ import 'package:plant_disease_detection/services/Classifier.dart';
 import 'package:plant_disease_detection/screens/PredictionScreenPage.dart';
 import 'package:tflite/tflite.dart';
 
+import '../constants/constants.dart';
 import '../models/disease_model.dart';
 import '../services/disease_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:hive/hive.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../services/hive_database.dart';
 
@@ -31,10 +35,7 @@ class HomeScreenPage extends StatefulWidget {
 }
 
 class _HomeScreenPageState extends State<HomeScreenPage> {
-  String mModelPath="plant_disease_model.tflite";
-  String mLabelPath="plant_labels.txt";
-  String mSamplePath="automn.jpg";
-  int inputSize=224;
+
    File? _image;
    // late Categorization _categorization;
    late ImagePicker _imagePicker;
@@ -44,6 +45,20 @@ class _HomeScreenPageState extends State<HomeScreenPage> {
    List _output=[];
   final Classifier classifier = Classifier();
   late Disease _disease;
+  int selectedIndex=0;
+   int _bottomNavIndex=0;
+
+   late AnimationController _hideBottomBarAnimationController;
+
+
+
+   //list of icons
+   List<IconData> iconList=[
+     Icons.home,
+     Icons.settings
+
+   ];
+
 
 
   @override
@@ -75,7 +90,9 @@ class _HomeScreenPageState extends State<HomeScreenPage> {
                    await   classifier.getDisease(ImageSource.gallery).then((value){
                        _disease=Disease(
                            name: value![0]["label"],
-                           imagePath: classifier.imageFile.path);
+                           imagePath: classifier.imageFile.path,
+                          confidence:value[0]['confidence']
+                       );
 
                        _confidence=value[0]['confidence'];
 
@@ -84,7 +101,7 @@ class _HomeScreenPageState extends State<HomeScreenPage> {
 
 
                      });
-                     if(_confidence>0.8){
+                     if(_confidence>0.5){
 
                        diseaseService.setDiseaseValue(_disease);
 
@@ -118,7 +135,8 @@ class _HomeScreenPageState extends State<HomeScreenPage> {
                      classifier.getDisease(ImageSource.camera).then((value){
                        _disease=Disease(
                            name: value![0]["label"],
-                           imagePath: classifier.imageFile.path);
+                           imagePath: classifier.imageFile.path,
+                           confidence: value[0]['confidence']);
 
                        _confidence=value[0]['confidence'];
 
@@ -139,6 +157,7 @@ class _HomeScreenPageState extends State<HomeScreenPage> {
        );
      }
 
+
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
@@ -154,8 +173,8 @@ class _HomeScreenPageState extends State<HomeScreenPage> {
         },
         tooltip: 'Increment',
           shape: CircleBorder(),
-        child: Image.asset("assets/automn.jpg"),
-          backgroundColor: Color(0xff9FF16D),
+        child: SvgPicture.asset("assets/images/floatingImage.svg"),
+          backgroundColor: Constants.primaryColor,
         ),
         bottomNavigationBar:
 
@@ -168,80 +187,149 @@ class _HomeScreenPageState extends State<HomeScreenPage> {
                 bottomLeft: Radius.circular(40),
               ),
 
-              child: BottomAppBar(
-                shape: CircularNotchedRectangle(),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    IconButton(onPressed:(){},
-                        icon: Icon(Icons.home)),
+              child: AnimatedBottomNavigationBar(
+                splashSpeedInMilliseconds: 200,
 
-                    IconButton(onPressed:(){},
-                        icon: Icon(Icons.settings))
-                  ],
-                ),
+                splashColor: Constants.primaryColor,
+                activeColor: Constants.primaryColor,
+                inactiveColor: Colors.black.withOpacity(.5),
+                gapLocation: GapLocation.center,
+                notchSmoothness: NotchSmoothness.softEdge,
+
+                icons: iconList,
+                activeIndex: _bottomNavIndex,
+                onTap: (index ) {
+                  setState(() {
+                    _bottomNavIndex=index;
+
+                  });
+                },
+
                          ),
             ),
 
 
-        backgroundColor: Colors.black26,
         appBar: AppBar(
-          title: Text("Plant Disease"),
+          title: Row(
+            children: [
+              Image.asset("assets/images/plantme2.png",height: 42,color: Colors.teal,fit: BoxFit.contain,),
+
+
+                 Container(child: Text("Plant Me",style: GoogleFonts.dangrek(color: Colors.teal,fontSize: 22))),
+
+            ],
+          ),
       
         ),
         body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+
           children: [
             Container(
-        height: 200,
-              width: 200,
+              height: 350,
+              width: 350,
               child: Card(
                 elevation: 5,
                 semanticContainer: true,
       
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)
-                ),
-                child:
-      
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text("Heal your crop",style: TextStyle(color: Colors.teal[400]),),
-      
-                    ElevatedButton(onPressed: (){
+                  side: BorderSide(color: Colors.black54),
+                  borderRadius: BorderRadius.circular(10),
 
-                    },
-                        child:Row(
-                          children: [
-                            Icon(Icons.camera_alt_outlined),
-                            SizedBox(
-                              width: 10,
-                            ),
-                            Text("Take a picture"),
-                          ],
-                        )),
-                  ],
-                  ),
+                ),
+                child: Image.asset("assets/images/plantidcard.png")
+      
                 ),
             ),
 
-          _image==null && _loading?Container(
-        child: Image.asset("assets/automn.jpg"),
-      ):Container(
-            height: 200,
-            child:Image.file(_image!),
+          SizedBox(
+            height: 40,
           ),
-            SizedBox(
-              height: 20,
-            ),
-            ElevatedButton(onPressed: (){
-              Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context)=>PredictionScreen()));
-            }, child: Text("Second widget")),
-            
+
+          _image==null && _loading?
+
+                  Container(
+                    padding: EdgeInsets.all(10),
+                    height: 250,
+
+
+                    child: Card(
+
+
+                      elevation: 3,
+                      shadowColor: Colors.grey,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)
+                      ),
+
+
+
+
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Row(
+                            children: [
+                              Icon(Icons.camera_alt),
+                              SizedBox(
+                                width: 5,
+                              ),
+                              Text("Select an image of the plants's leaf to view the results",style: TextStyle(fontSize: 12,fontWeight: FontWeight.w600),),
+                              //
+
+                            ],
+                          ),
+                        ),
+
+
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Row(
+                            children: [
+                              Icon(Icons.sunny),
+                              SizedBox(
+                                width: 5,
+                              ),
+                              Text("The image must be well lit and clear",style: TextStyle(fontSize: 14,fontWeight: FontWeight.w400),),
+
+                            ],
+                          ),
+                        ),
+
+
+                           Padding(
+                             padding: const EdgeInsets.symmetric(vertical: 20),
+                             child: Row(
+                              children: [
+                                Icon(Icons.image_not_supported),
+                                SizedBox(
+                                  width: 5,
+                                ),
+                                Container(
+                                  width: 350,
+                                  child: Text("Images other than the specific plant's leaves may lead to inaccurate results",
+                                    style: TextStyle(fontSize: 14,fontWeight: FontWeight.w400,),maxLines: 2),
+                                )
+
+                              ],
+                                                       ),
+                           ),
+
+
+
+                      ],
+
+
+                    )
+                                  ),
+                  ):Container(),
+
+
+
+
            // _output!=null? Text("${_output[0]['label']}"):Container()
           ],
+
         ),
       )
 

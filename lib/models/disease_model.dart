@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:hive/hive.dart';
 
 part 'disease_model.g.dart';
@@ -19,23 +21,29 @@ class Disease extends HiveObject {
   @HiveField(4)
   late DateTime dateTime;
 
-  Disease({required this.name, required this.imagePath}) {
+  @HiveField(5)
+  late double? confidence;
+
+
+
+
+  Disease({required this.name, required this.imagePath, this.confidence }) {
     dateTime = DateTime.now();
 
     switch (name) {
-      case "Pepper Bell Bacterial Spot":
+      case "pepper bell bacterial spot":
         possibleCauses =
         "Caused by Xanthomonas bacteria, spread through splashing rain.";
         possibleSolution =
         "Spray early and often. Use copper and Mancozeb sprays.";
         break;
 
-      case "Pepper Bell Healthy":
+      case "pepper bell healthy":
         possibleCauses = "Crops are okay.";
         possibleSolution = "N/A";
         break;
 
-      case "Potato Early Blight":
+      case "potato early blight":
         possibleCauses =
         "The fungus Alternaria solani, high humidity and long periods of leaf wetness.";
         possibleSolution =
@@ -61,7 +69,7 @@ class Disease extends HiveObject {
         "Remove symptomatic plants from the field or greenhouse to prevent the spread of bacteria to healthy plants.";
         break;
 
-      case "Tomato Early Blight":
+      case "tomato early blight":
         possibleCauses =
         "The fungus Alternaria solani, high humidity and long periods of leaf wetness.";
         possibleSolution =
@@ -73,7 +81,7 @@ class Disease extends HiveObject {
         possibleSolution = "N/A";
         break;
 
-      case "Tomato Late Blight":
+      case "tomato late blight":
         possibleCauses = "Caused by the water mold Phytophthora infestans.";
         possibleSolution = "Timely application of fungicide";
         break;
@@ -112,7 +120,7 @@ class Disease extends HiveObject {
         "No cure for infected plants, remove all infected plants and destroy them.";
         break;
 
-      case "Tomato Yellow Leaf Curl Virus":
+      case "tomato tomato yellow leaf curl virus":
         possibleCauses =
         "Physically spread plant-to-plant by the silverleaf whitefly.";
         possibleSolution =
